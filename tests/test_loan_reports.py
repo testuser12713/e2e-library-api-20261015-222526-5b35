@@ -200,10 +200,21 @@ def test_list_loans_route_serves_filtered_page(db_session: Session) -> None:
     assert len(payload["items"]) == 1
 
 
-def test_list_loans_route_registered_on_app(client) -> None:
-    response = client.get("/loans")
+def test_list_loans_route_registered_on_app(client, db_session: Session) -> None:
+    today = date(2024, 5, 1)
+    book = _book(db_session, "isbn-on-app")
+    member = _member(db_session, "on-app@example.com")
+    seeded = _loan(db_session, book, member, today, today + timedelta(days=14))
+    db_session.commit()
 
-    assert response.status_code != 404
+    response = client.get("/loans", params={"book_id": book.id})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] >= 1
+    assert payload["limit"] == 50
+    assert payload["offset"] == 0
+    assert any(item["id"] == seeded.id for item in payload["items"])
 
 
 def test_list_overdue_route_is_wired(client, db_session: Session) -> None:
