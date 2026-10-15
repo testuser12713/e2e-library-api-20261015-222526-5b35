@@ -7,7 +7,12 @@ from datetime import UTC, date, datetime
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.models import Book, Loan, Member
+
+
+def _headers() -> dict[str, str]:
+    return {"X-API-Key": settings.library_api_key or ""}
 
 
 def _today() -> date:
@@ -58,7 +63,7 @@ def test_return_open_loan_sets_today_and_frees_copy(
     member = _seed_member(db_session, email="return-open-1@example.com")
     loan = _seed_loan(db_session, book, member)
 
-    response = client.post(f"/loans/{loan.id}/return", headers={"X-API-Key": "test-api-key"})
+    response = client.post(f"/loans/{loan.id}/return", headers=_headers())
 
     assert response.status_code == 200
     body = response.json()
@@ -71,7 +76,7 @@ def test_return_open_loan_sets_today_and_frees_copy(
 
 
 def test_return_unknown_loan_returns_404(client: TestClient) -> None:
-    response = client.post("/loans/999999/return", headers={"X-API-Key": "test-api-key"})
+    response = client.post("/loans/999999/return", headers=_headers())
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "not_found"
@@ -85,7 +90,7 @@ def test_second_return_conflicts_without_changing_date(
     already_returned = date(2024, 6, 6)
     loan = _seed_loan(db_session, book, member, returned_on=already_returned)
 
-    response = client.post(f"/loans/{loan.id}/return", headers={"X-API-Key": "test-api-key"})
+    response = client.post(f"/loans/{loan.id}/return", headers=_headers())
 
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "conflict"
@@ -102,8 +107,8 @@ def test_return_twice_via_endpoint_frees_metadata_once(
     member = _seed_member(db_session, email="return-flow-1@example.com")
     loan = _seed_loan(db_session, book, member)
 
-    first = client.post(f"/loans/{loan.id}/return", headers={"X-API-Key": "test-api-key"})
-    second = client.post(f"/loans/{loan.id}/return", headers={"X-API-Key": "test-api-key"})
+    first = client.post(f"/loans/{loan.id}/return", headers=_headers())
+    second = client.post(f"/loans/{loan.id}/return", headers=_headers())
 
     assert first.status_code == 200
     assert second.status_code == 409
@@ -119,7 +124,7 @@ def test_due_arithmetic_unchanged_on_return(client: TestClient, db_session: Sess
     loan = _seed_loan(db_session, book, member)
     due = loan.due_on
 
-    response = client.post(f"/loans/{loan.id}/return", headers={"X-API-Key": "test-api-key"})
+    response = client.post(f"/loans/{loan.id}/return", headers=_headers())
 
     assert response.status_code == 200
     db_session.expire_all()
