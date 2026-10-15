@@ -1,22 +1,16 @@
-"""Member routes — stubs until the member CRUD ticket fills them."""
+"""Member routes: CRUD over the member resource."""
 
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
-from app.errors import AppError
+from app.database import get_db
 from app.schemas.members import MemberCreate, MemberList, MemberPatch, MemberRead
 from app.security import require_api_key
+from app.services import members as members_service
 
 router = APIRouter(tags=["members"])
-
-
-def _not_implemented() -> AppError:
-    return AppError(
-        status_code=501,
-        code="not_implemented",
-        message="Member routes are implemented by the member CRUD ticket.",
-    )
 
 
 @router.post(
@@ -25,18 +19,30 @@ def _not_implemented() -> AppError:
     status_code=201,
     dependencies=[Depends(require_api_key)],
 )
-def create_member(payload: MemberCreate) -> MemberRead:
-    raise _not_implemented()
+def create_member(payload: MemberCreate, db: Session = Depends(get_db)) -> MemberRead:
+    member = members_service.create_member(db, payload)
+    return MemberRead.model_validate(member)
 
 
 @router.get("/members", response_model=MemberList)
-def list_members(limit: int = 50, offset: int = 0) -> MemberList:
-    raise _not_implemented()
+def list_members(
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+) -> MemberList:
+    members, total = members_service.list_members(db, limit, offset)
+    return MemberList(
+        items=[MemberRead.model_validate(member) for member in members],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/members/{member_id}", response_model=MemberRead)
-def get_member(member_id: int) -> MemberRead:
-    raise _not_implemented()
+def get_member(member_id: int, db: Session = Depends(get_db)) -> MemberRead:
+    member = members_service.get_member(db, member_id)
+    return MemberRead.model_validate(member)
 
 
 @router.put(
@@ -44,8 +50,13 @@ def get_member(member_id: int) -> MemberRead:
     response_model=MemberRead,
     dependencies=[Depends(require_api_key)],
 )
-def replace_member(member_id: int, payload: MemberCreate) -> MemberRead:
-    raise _not_implemented()
+def replace_member(
+    member_id: int,
+    payload: MemberCreate,
+    db: Session = Depends(get_db),
+) -> MemberRead:
+    member = members_service.replace_member(db, member_id, payload)
+    return MemberRead.model_validate(member)
 
 
 @router.patch(
@@ -53,8 +64,13 @@ def replace_member(member_id: int, payload: MemberCreate) -> MemberRead:
     response_model=MemberRead,
     dependencies=[Depends(require_api_key)],
 )
-def update_member(member_id: int, payload: MemberPatch) -> MemberRead:
-    raise _not_implemented()
+def update_member(
+    member_id: int,
+    payload: MemberPatch,
+    db: Session = Depends(get_db),
+) -> MemberRead:
+    member = members_service.patch_member(db, member_id, payload)
+    return MemberRead.model_validate(member)
 
 
 @router.delete(
@@ -62,5 +78,5 @@ def update_member(member_id: int, payload: MemberPatch) -> MemberRead:
     status_code=204,
     dependencies=[Depends(require_api_key)],
 )
-def delete_member(member_id: int) -> None:
-    raise _not_implemented()
+def delete_member(member_id: int, db: Session = Depends(get_db)) -> None:
+    members_service.delete_member(db, member_id)
