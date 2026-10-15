@@ -25,11 +25,18 @@ from app.security import require_api_key
 CONFIGURED_KEY = "unit-test-secret-key"
 
 
+def _valid_isbn() -> str:
+    """A unique, checksum-valid ISBN-13 so the payload passes book validation."""
+    body = f"978{uuid.uuid4().int % 10**9:09d}"
+    total = sum(int(char) * (1 if index % 2 == 0 else 3) for index, char in enumerate(body))
+    return body + str((10 - total % 10) % 10)
+
+
 def _book_payload() -> dict[str, object]:
     return {
         "title": "Guarded Book",
         "author": "Guard Tester",
-        "isbn": uuid.uuid4().hex,
+        "isbn": _valid_isbn(),
         "publication_year": 2000,
         "copies_total": 1,
     }
