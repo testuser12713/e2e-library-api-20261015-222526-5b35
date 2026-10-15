@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models import Book, Loan, Member
 
-API_KEY_HEADERS = {"X-API-Key": "test-api-key"}
+API_KEY_HEADERS = {"X-API-Key": settings.library_api_key or ""}
 
 
 def _make_book(db: Session, *, copies_total: int = 1, copies_available: int | None = None) -> Book:
