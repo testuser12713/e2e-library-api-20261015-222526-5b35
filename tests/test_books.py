@@ -185,7 +185,7 @@ def test_patch_copies_total_shifts_available(client: TestClient) -> None:
     assert raised.json()["copies_available"] == 6
 
 
-def test_patch_copies_total_below_open_loans_returns_429(
+def test_patch_copies_total_below_open_loans_returns_409(
     client: TestClient, db_session: Session
 ) -> None:
     created = _create_book(client, copies_total=2)
@@ -196,7 +196,7 @@ def test_patch_copies_total_below_open_loans_returns_429(
     db_session.commit()
 
     response = client.patch(f"/books/{created['id']}", json={"copies_total": 1}, headers=_auth())
-    assert response.status_code == 429
+    assert response.status_code == 409
     assert response.json()["error"]["details"][0]["field"] == "copies_total"
 
 

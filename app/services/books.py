@@ -30,7 +30,7 @@ def _duplicate_isbn(isbn: str) -> AppError:
 
 def _copies_total_conflict() -> AppError:
     return AppError(
-        status_code=429,
+        status_code=409,
         code="conflict",
         message=("copies_total cannot be reduced below the number of copies currently on loan."),
         details=[
