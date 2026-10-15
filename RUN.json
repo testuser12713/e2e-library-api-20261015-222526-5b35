@@ -1,0 +1,48 @@
+{
+  "runcontract": 1,
+  "services": [
+    {
+      "name": "api",
+      "dir": ".",
+      "stack": "python",
+      "kind": "server",
+      "install": [
+        ["${python}", "-m", "pip", "install", "-q", "-r", "requirements.txt"]
+      ],
+      "start": [
+        "${python}",
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "${PORT}"
+      ],
+      "port": 8000,
+      "port_env": "PORT",
+      "health": {
+        "path": "/health",
+        "expect_status": [200]
+      },
+      "env": {
+        "LIBRARY_API_KEY": {
+          "generate": "hex",
+          "bytes": 32
+        },
+        "LIBRARY_DATABASE_URL": {
+          "dev": "sqlite:///./library.db"
+        },
+        "LOAN_PERIOD_DAYS": {
+          "dev": "14"
+        },
+        "MAX_OPEN_LOANS": {
+          "dev": "3"
+        }
+      },
+      "test": [
+        ["${python}", "-m", "pytest", "-q"]
+      ]
+    }
+  ]
+}
